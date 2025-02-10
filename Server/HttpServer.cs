@@ -3,11 +3,15 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using System.Text.Json;
+using MTCG.Services;
+using MTCG.Models;
 
 namespace MTCG.Server
 {
     public class HttpServer
     {
+        private readonly UserService _userService = new();
         private readonly int _port;
         private readonly TcpListener _listener;
 
@@ -38,7 +42,7 @@ namespace MTCG.Server
 
             Console.WriteLine($"Anfrage erhalten:\n{request}");
 
-            // Die erste Zeile der HTTP-Anfrage auslesen (z. B. "GET /users HTTP/1.1")
+            // Die erste Zeile der HTTP-Anfrage auslesen (z. B. "POST /users HTTP/1.1")
             string[] requestLines = request.Split("\r\n");
             string[] requestParts = requestLines[0].Split(" ");
             if (requestParts.Length < 2)
@@ -50,29 +54,44 @@ namespace MTCG.Server
             string method = requestParts[0];  // GET, POST, PUT, DELETE
             string path = requestParts[1];    // /users, /cards, etc.
 
-            string response = RouteRequest(method, path);
+            // Extrahiere den Request-Body (JSON-Daten)
+            string requestBody = requestLines.Length > 1 ? requestLines[requestLines.Length - 1] : "";
+
+            string response = RouteRequest(method, path, requestBody);
 
             byte[] responseData = Encoding.UTF8.GetBytes(response);
             stream.Write(responseData, 0, responseData.Length);
             client.Close();
         }
 
-        private string RouteRequest(string method, string path)
+        private string RouteRequest(string method, string path, string requestBody)
         {
-            if (method == "GET" && path == "/users")
+            if (method == "POST" && path == "/users")
             {
-                return "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nListe der User";
+                return HandleUserRegistration(requestBody);
             }
-            else if (method == "POST" && path == "/users")
-            {
-                return "HTTP/1.1 201 Created\r\nContent-Type: text/plain\r\n\r\nUser erstellt";
-            }
-            else if (method == "GET" && path == "/cards")
-            {
-                return "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nListe der Karten";
-            }
+
             return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRoute nicht gefunden";
         }
 
+        private string HandleUserRegistration(string requestBody)
+        {
+            try
+            {
+                User? newUser = JsonSerializer.Deserialize<User>(requestBody);
+                if (newUser == null || string.IsNullOrEmpty(newUser.Username) || string.IsNullOrEmpty(newUser.Password))
+                    return "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nUngültige Eingabe";
+
+                bool success = _userService.RegisterUser(newUser.Username, newUser.Password);
+                if (success)
+                    return "HTTP/1.1 201 Created\r\nContent-Type: text/plain\r\n\r\nUser erfolgreich registriert";
+                else
+                    return "HTTP/1.1 409 Conflict\r\nContent-Type: text/plain\r\n\r\nUser existiert bereits";
+            }
+            catch
+            {
+                return "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nFehlerhafte JSON-Daten";
+            }
+        }
     }
 }
