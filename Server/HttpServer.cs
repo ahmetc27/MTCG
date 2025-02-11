@@ -11,7 +11,8 @@ namespace MTCG.Server
 {
     public class HttpServer
     {
-        private readonly UserService _userService = new();
+        private readonly UserService _userService;
+        private readonly CardService _cardService = new(); // Neue Instanz für Karten-Service
         private readonly int _port;
         private readonly TcpListener _listener;
 
@@ -19,6 +20,7 @@ namespace MTCG.Server
         {
             _port = port;
             _listener = new TcpListener(IPAddress.Any, _port);
+            _userService = new UserService(_cardService);
         }
 
         public void Start()
@@ -78,9 +80,14 @@ namespace MTCG.Server
             {
                 return HandleGetUser(path, authHeader);
             }
+            else if (method == "GET" && path == "/cards")
+            {
+                return HandleGetCards(authHeader);
+            }
 
             return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRoute nicht gefunden";
         }
+
         private string HandleUserRegistration(string requestBody)
         {
             try
@@ -137,6 +144,39 @@ namespace MTCG.Server
             }
 
             string jsonResponse = JsonSerializer.Serialize(user);
+            return $"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{jsonResponse}";
+        }
+
+        private string HandleGetCards(string authHeader)
+        {
+            Console.WriteLine($"DEBUG: Token erhalten: {authHeader}");
+
+            if (string.IsNullOrEmpty(authHeader))
+            {
+                Console.WriteLine("DEBUG: Kein Token erhalten!");
+                return "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nKein Token angegeben";
+            }
+
+            string username = authHeader.Replace("-mtcgToken", ""); // Token in Username umwandeln
+            Console.WriteLine($"DEBUG: Extrahierter Username: {username}");
+
+            if (!_userService.ValidateToken(username, authHeader))
+            {
+                Console.WriteLine("DEBUG: Token ungültig!");
+                return "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUngültiger Token";
+            }
+
+            List<Card> userCards = _cardService.GetUserCards(username);
+            Console.WriteLine($"DEBUG: Anzahl Karten gefunden: {userCards.Count}");
+
+            if (userCards.Count == 0)
+            {
+                Console.WriteLine("DEBUG: Keine Karten vorhanden!");
+                return "HTTP/1.1 204 No Content\r\nContent-Type: text/plain\r\n\r\nUser hat keine Karten";
+            }
+
+            string jsonResponse = JsonSerializer.Serialize(userCards);
+            Console.WriteLine($"DEBUG: JSON-Antwort: {jsonResponse}");
             return $"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{jsonResponse}";
         }
     }

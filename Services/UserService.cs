@@ -6,15 +6,32 @@ namespace MTCG.Services
     public class UserService
     {
         private readonly List<User> _users = new(); // Später mit DB ersetzen
+        private readonly CardService _cardService; // Neue Instanz für Karten-Service
 
+        public UserService(CardService cardService)
+        {
+            _cardService = cardService;
+        }
         public bool RegisterUser(string username, string password)
         {
             if (_users.Exists(u => u.Username == username))
-                return false; // User existiert bereits
+                return false;
 
             _users.Add(new User(username, password));
-            return true; // Erfolgreich registriert
+
+            // Testweise Karten hinzufügen
+            Console.WriteLine($"DEBUG: Karten für {username} werden hinzugefügt...");
+            _cardService.AddCardsToUser(username, new List<Card>
+            {
+                new Card("1", "FireDragon", 50),
+                new Card("2", "WaterGoblin", 30)
+            });
+
+            Console.WriteLine("DEBUG: Karten erfolgreich hinzugefügt!");
+
+            return true;
         }
+
 
         public string? AuthenticateUser(string username, string password)
         {
