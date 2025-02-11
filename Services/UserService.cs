@@ -25,5 +25,15 @@ namespace MTCG.Services
 
             return $"{username}-mtcgToken"; // ✅ Token wird generiert
         }
+
+        public bool ValidateToken(string username, string token)
+        {
+            return token == $"{username}-mtcgToken";
+        }
+
+        public User? GetUser(string username)
+        {
+            return _users.FirstOrDefault(u => u.Username == username);
+        }
     }
 }

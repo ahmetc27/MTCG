@@ -42,7 +42,6 @@ namespace MTCG.Server
 
             Console.WriteLine($"Anfrage erhalten:\n{request}");
 
-            // Die erste Zeile der HTTP-Anfrage auslesen (z. B. "POST /users HTTP/1.1")
             string[] requestLines = request.Split("\r\n");
             string[] requestParts = requestLines[0].Split(" ");
             if (requestParts.Length < 2)
@@ -51,20 +50,21 @@ namespace MTCG.Server
                 return;
             }
 
-            string method = requestParts[0];  // GET, POST, PUT, DELETE
-            string path = requestParts[1];    // /users, /cards, etc.
+            string method = requestParts[0];  
+            string path = requestParts[1];    
 
-            // Extrahiere den Request-Body (JSON-Daten)
             string requestBody = requestLines.Length > 1 ? requestLines[requestLines.Length - 1] : "";
 
-            string response = RouteRequest(method, path, requestBody);
+            string authHeader = requestLines.FirstOrDefault(line => line.StartsWith("Authorization: "))?.Substring(15) ?? "";
+
+            string response = RouteRequest(method, path, requestBody, authHeader);
 
             byte[] responseData = Encoding.UTF8.GetBytes(response);
             stream.Write(responseData, 0, responseData.Length);
             client.Close();
         }
 
-        private string RouteRequest(string method, string path, string requestBody)
+        private string RouteRequest(string method, string path, string requestBody, string authHeader)
         {
             if (method == "POST" && path == "/users")
             {
@@ -74,11 +74,13 @@ namespace MTCG.Server
             {
                 return HandleUserLogin(requestBody);
             }
+            else if (method == "GET" && path.StartsWith("/users/"))
+            {
+                return HandleGetUser(path, authHeader);
+            }
 
             return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRoute nicht gefunden";
         }
-
-
         private string HandleUserRegistration(string requestBody)
         {
             try
@@ -117,6 +119,25 @@ namespace MTCG.Server
             {
                 return "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nFehlerhafte JSON-Daten";
             }
+        }
+
+        private string HandleGetUser(string path, string authHeader)
+        {
+            string username = path.Substring(7); // "/users/Ahmet" → "Ahmet"
+
+            if (string.IsNullOrEmpty(authHeader) || !_userService.ValidateToken(username, authHeader))
+            {
+                return "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nZugriff verweigert";
+            }
+
+            User? user = _userService.GetUser(username);
+            if (user == null)
+            {
+                return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nUser nicht gefunden";
+            }
+
+            string jsonResponse = JsonSerializer.Serialize(user);
+            return $"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{jsonResponse}";
         }
     }
 }
