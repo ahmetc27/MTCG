@@ -70,9 +70,14 @@ namespace MTCG.Server
             {
                 return HandleUserRegistration(requestBody);
             }
+            else if (method == "POST" && path == "/sessions")
+            {
+                return HandleUserLogin(requestBody);
+            }
 
             return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRoute nicht gefunden";
         }
+
 
         private string HandleUserRegistration(string requestBody)
         {
@@ -87,6 +92,26 @@ namespace MTCG.Server
                     return "HTTP/1.1 201 Created\r\nContent-Type: text/plain\r\n\r\nUser erfolgreich registriert";
                 else
                     return "HTTP/1.1 409 Conflict\r\nContent-Type: text/plain\r\n\r\nUser existiert bereits";
+            }
+            catch
+            {
+                return "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nFehlerhafte JSON-Daten";
+            }
+        }
+
+        private string HandleUserLogin(string requestBody)
+        {
+            try
+            {
+                User? loginUser = JsonSerializer.Deserialize<User>(requestBody);
+                if (loginUser == null || string.IsNullOrEmpty(loginUser.Username) || string.IsNullOrEmpty(loginUser.Password))
+                    return "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nUngültige Eingabe";
+
+                string? token = _userService.AuthenticateUser(loginUser.Username, loginUser.Password);
+                if (token == null)
+                    return "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nFalsche Login-Daten";
+
+                return $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n{token}";
             }
             catch
             {

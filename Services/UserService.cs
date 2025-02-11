@@ -15,5 +15,15 @@ namespace MTCG.Services
             _users.Add(new User(username, password));
             return true; // Erfolgreich registriert
         }
+
+        public string? AuthenticateUser(string username, string password)
+        {
+            User? user = _users.FirstOrDefault(u => u.Username == username && u.Password == password);
+            
+            if (user == null)
+                return null; // ❌ Falsche Login-Daten
+
+            return $"{username}-mtcgToken"; // ✅ Token wird generiert
+        }
     }
 }
