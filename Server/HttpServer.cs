@@ -90,10 +90,13 @@ namespace MTCG.Server
             {
                 return HandleSetDeck(authHeader, requestBody);
             }
+            else if (method == "GET" && path == "/deck")
+            {
+                return HandleGetDeck(authHeader);
+            }
 
             return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRoute nicht gefunden";
         }
-
         private string HandleUserRegistration(string requestBody)
         {
             try
@@ -223,6 +226,37 @@ namespace MTCG.Server
             {
                 return "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nUngültiges JSON-Format";
             }
+        }
+
+        private string HandleGetDeck(string authHeader)
+        {
+            Console.WriteLine("DEBUG: `GET /deck` aufgerufen!");
+
+            if (string.IsNullOrEmpty(authHeader))
+            {
+                Console.WriteLine("DEBUG: Kein Token angegeben!");
+                return "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nKein Token angegeben";
+            }
+
+            string username = authHeader.Replace("-mtcgToken", ""); // Token in Username umwandeln
+            Console.WriteLine($"DEBUG: Extrahierter Username: {username}");
+
+            if (!_userService.ValidateToken(username, authHeader))
+            {
+                Console.WriteLine("DEBUG: Ungültiger Token!");
+                return "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUngültiger Token";
+            }
+
+            Deck? userDeck = _deckService.GetUserDeck(username);
+            if (userDeck == null || userDeck.Cards.Count == 0)
+            {
+                Console.WriteLine("DEBUG: Deck ist leer!");
+                return "HTTP/1.1 204 No Content\r\nContent-Type: text/plain\r\n\r\nDeck ist leer";
+            }
+
+            string jsonResponse = JsonSerializer.Serialize(userDeck.Cards);
+            Console.WriteLine($"DEBUG: JSON-Antwort: {jsonResponse}");
+            return $"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{jsonResponse}";
         }
     }
 }
