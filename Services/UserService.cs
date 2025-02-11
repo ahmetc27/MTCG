@@ -28,12 +28,22 @@ namespace MTCG.Services
                 new Card("3", "RegularOrk", 40),
                 new Card("4", "WaterSpell", 35)
             });
-            Console.WriteLine("DEBUG: Karten erfolgreich hinzugefügt!");
 
+            // Falls Mehmet registriert wird, soll er andere Karten bekommen:
+            if (username == "Mehmet")
+            {
+                _cardService.AddCardsToUser(username, new List<Card>
+                {
+                    new Card("5", "LightningDragon", 55),
+                    new Card("6", "EarthGolem", 32),
+                    new Card("7", "ShadowElf", 45),
+                    new Card("8", "FireSpell", 38)
+                });
+            }
+
+            Console.WriteLine("DEBUG: Karten erfolgreich hinzugefügt!");
             return true;
         }
-
-
 
         public string? AuthenticateUser(string username, string password)
         {

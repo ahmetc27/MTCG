@@ -14,15 +14,18 @@ namespace MTCG.Server
         private readonly UserService _userService;
         private readonly CardService _cardService = new(); // Neue Instanz für Karten-Service
         private readonly DeckService _deckService = new();
+        private readonly BattleService _battleService;
 
         private readonly int _port;
         private readonly TcpListener _listener;
 
-        public HttpServer(int port)
+       public HttpServer(int port)
         {
             _port = port;
             _listener = new TcpListener(IPAddress.Any, _port);
             _userService = new UserService(_cardService);
+            _deckService = new DeckService();
+            _battleService = new BattleService(_deckService);
         }
 
         public void Start()
@@ -93,6 +96,10 @@ namespace MTCG.Server
             else if (method == "GET" && path == "/deck")
             {
                 return HandleGetDeck(authHeader);
+            }
+            else if (method == "POST" && path == "/battles")
+            {
+                return HandleBattle(authHeader);
             }
 
             return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRoute nicht gefunden";
@@ -257,6 +264,23 @@ namespace MTCG.Server
             string jsonResponse = JsonSerializer.Serialize(userDeck.Cards);
             Console.WriteLine($"DEBUG: JSON-Antwort: {jsonResponse}");
             return $"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{jsonResponse}";
+        }
+        private string HandleBattle(string authHeader)
+        {
+            if (string.IsNullOrEmpty(authHeader))
+            {
+                return "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nKein Token angegeben";
+            }
+
+            string username = authHeader.Replace("-mtcgToken", ""); // Token in Username umwandeln
+
+            if (!_userService.ValidateToken(username, authHeader))
+            {
+                return "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUngültiger Token";
+            }
+
+            string battleResult = _battleService.JoinBattle(username);
+            return $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n{battleResult}";
         }
     }
 }
