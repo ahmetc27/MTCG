@@ -1,0 +1,7 @@
+curl -X POST http://localhost:10001/users -H "Content-Type: application/json" -d "{\"Username\":\"Ahmet\", \"Password\":\"secure123\"}"
+
+curl -X POST http://localhost:10001/sessions -H "Content-Type: application/json" -d "{\"Username\":\"Ahmet\", \"Password\":\"secure123\"}"
+
+curl -X GET http://localhost:10001/users/Ahmet -H "Authorization: Ahmet-mtcgToken"
+
+curl -X GET http://localhost:10001/users/Ahmet // message für diese command: Zugriff verweigert
