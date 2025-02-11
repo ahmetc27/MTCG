@@ -24,13 +24,15 @@ namespace MTCG.Services
             _cardService.AddCardsToUser(username, new List<Card>
             {
                 new Card("1", "FireDragon", 50),
-                new Card("2", "WaterGoblin", 30)
+                new Card("2", "WaterGoblin", 30),
+                new Card("3", "RegularOrk", 40),
+                new Card("4", "WaterSpell", 35)
             });
-
             Console.WriteLine("DEBUG: Karten erfolgreich hinzugefügt!");
 
             return true;
         }
+
 
 
         public string? AuthenticateUser(string username, string password)

@@ -13,6 +13,8 @@ namespace MTCG.Server
     {
         private readonly UserService _userService;
         private readonly CardService _cardService = new(); // Neue Instanz für Karten-Service
+        private readonly DeckService _deckService = new();
+
         private readonly int _port;
         private readonly TcpListener _listener;
 
@@ -83,6 +85,10 @@ namespace MTCG.Server
             else if (method == "GET" && path == "/cards")
             {
                 return HandleGetCards(authHeader);
+            }
+            else if (method == "PUT" && path == "/deck")
+            {
+                return HandleSetDeck(authHeader, requestBody);
             }
 
             return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRoute nicht gefunden";
@@ -178,6 +184,45 @@ namespace MTCG.Server
             string jsonResponse = JsonSerializer.Serialize(userCards);
             Console.WriteLine($"DEBUG: JSON-Antwort: {jsonResponse}");
             return $"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{jsonResponse}";
+        }
+
+        private string HandleSetDeck(string authHeader, string requestBody)
+        {
+            if (string.IsNullOrEmpty(authHeader))
+            {
+                return "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nKein Token angegeben";
+            }
+
+            string username = authHeader.Replace("-mtcgToken", ""); // Token in Username umwandeln
+
+            if (!_userService.ValidateToken(username, authHeader))
+            {
+                return "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUngültiger Token";
+            }
+
+            try
+            {
+                List<string>? cardIds = JsonSerializer.Deserialize<List<string>>(requestBody);
+                if (cardIds == null || cardIds.Count != 4)
+                {
+                    return "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nDeck muss genau 4 Karten enthalten";
+                }
+
+                List<Card> userCards = _cardService.GetUserCards(username);
+                List<Card> selectedCards = userCards.Where(c => cardIds.Contains(c.Id)).ToList();
+
+                if (selectedCards.Count != 4)
+                {
+                    return "HTTP/1.1 403 Forbidden\r\nContent-Type: text/plain\r\n\r\nMindestens eine Karte gehört nicht dem User";
+                }
+
+                _deckService.SetUserDeck(username, selectedCards);
+                return "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nDeck erfolgreich gespeichert";
+            }
+            catch
+            {
+                return "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nUngültiges JSON-Format";
+            }
         }
     }
 }

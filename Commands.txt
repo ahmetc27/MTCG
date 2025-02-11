@@ -7,3 +7,5 @@ curl -X GET http://localhost:10001/users/Ahmet -H "Authorization: Ahmet-mtcgToke
 curl -X GET http://localhost:10001/users/Ahmet // message für diese command: Zugriff verweigert
 
 curl -X GET http://localhost:10001/cards -H "Authorization: Ahmet-mtcgToken"
+
+curl -X PUT http://localhost:10001/deck -H "Authorization: Ahmet-mtcgToken" -H "Content-Type: application/json" -d "[\"1\", \"2\", \"3\", \"4\"]"
