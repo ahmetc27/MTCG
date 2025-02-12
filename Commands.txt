@@ -19,3 +19,7 @@ curl -X POST http://localhost:10001/battles -H "Authorization: Mehmet-mtcgToken"
 curl -X POST http://localhost:10001/users -H "Content-Type: application/json" -d "{\"Username\":\"Mehmet\", \"Password\":\"secure123\"}"
 
 curl -X POST http://localhost:10001/sessions -H "Content-Type: application/json" -d "{\"Username\":\"Mehmet\", \"Password\":\"secure123\"}"
+
+curl -X PUT http://localhost:10001/deck -H "Authorization: Mehmet-mtcgToken" -H "Content-Type: application/json" -d "[\"5\", \"6\", \"7\", \"8\"]"
+
+curl -X GET http://localhost:10001/scoreboard

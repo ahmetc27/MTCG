@@ -25,7 +25,7 @@ namespace MTCG.Server
             _listener = new TcpListener(IPAddress.Any, _port);
             _userService = new UserService(_cardService);
             _deckService = new DeckService();
-            _battleService = new BattleService(_deckService);
+            _battleService = new BattleService(_deckService, _userService);
         }
 
         public void Start()
@@ -100,6 +100,10 @@ namespace MTCG.Server
             else if (method == "POST" && path == "/battles")
             {
                 return HandleBattle(authHeader);
+            }
+            else if (method == "GET" && path == "/scoreboard")
+            {
+                return HandleGetScoreboard();
             }
 
             return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRoute nicht gefunden";
@@ -282,5 +286,21 @@ namespace MTCG.Server
             string battleResult = _battleService.JoinBattle(username);
             return $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n{battleResult}";
         }
+
+        private string HandleGetScoreboard()
+        {
+            List<User> sortedUsers = _userService.GetUsersSortedByElo();
+
+            string jsonResponse = JsonSerializer.Serialize(sortedUsers.Select(u => new
+            {
+                u.Username,
+                u.Elo,
+                u.Wins,
+                u.Losses
+            }));
+
+            return $"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{jsonResponse}";
+        }
+
     }
 }

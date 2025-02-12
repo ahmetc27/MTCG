@@ -12,9 +12,12 @@ namespace MTCG.Services
         private readonly DeckService _deckService;
         private readonly Dictionary<string, string> _battleResults = new(); // Speichert Kampfresultate
 
-        public BattleService(DeckService deckService)
+        private readonly UserService _userService;
+
+        public BattleService(DeckService deckService, UserService userService)
         {
             _deckService = deckService;
+            _userService = userService;
         }
 
         public string JoinBattle(string username)
@@ -73,10 +76,14 @@ namespace MTCG.Services
             string winner;
             if (player1Wins > player2Wins)
             {
+                _userService.UpdateElo(player1, 3);
+                _userService.UpdateElo(player2, -5);
                 winner = $"{player1} wins the battle!";
             }
             else if (player2Wins > player1Wins)
             {
+                _userService.UpdateElo(player2, 3);
+                _userService.UpdateElo(player1, -5);
                 winner = $"{player2} wins the battle!";
             }
             else
@@ -89,6 +96,7 @@ namespace MTCG.Services
 
             return battleLog.ToString();
         }
+
 
         public string GetLastBattleResult(string username)
         {

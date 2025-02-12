@@ -64,5 +64,19 @@ namespace MTCG.Services
         {
             return _users.FirstOrDefault(u => u.Username == username);
         }
+        public void UpdateElo(string username, int eloChange)
+        {
+            User? user = _users.FirstOrDefault(u => u.Username == username);
+            if (user != null)
+            {
+                user.Elo += eloChange;
+                if (eloChange > 0) user.Wins++;
+                else if (eloChange < 0) user.Losses++; 
+            }
+        }
+        public List<User> GetUsersSortedByElo()
+        {
+            return _users.OrderByDescending(u => u.Elo).ToList();
+        }
     }
 }
