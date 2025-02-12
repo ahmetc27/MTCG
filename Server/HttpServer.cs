@@ -14,6 +14,7 @@ namespace MTCG.Server
         private readonly UserService _userService;
         private readonly CardService _cardService = new(); // Neue Instanz für Karten-Service
         private readonly DeckService _deckService = new();
+        private readonly TradingService _tradingService = new();
         private readonly BattleService _battleService;
 
         private readonly int _port;
@@ -26,6 +27,9 @@ namespace MTCG.Server
             _userService = new UserService(_cardService);
             _deckService = new DeckService();
             _battleService = new BattleService(_deckService, _userService);
+
+            _tradingService.AddTrade(new Trade("trade1", "Ahmet", new Card("1", "FireDragon", 50), "Monster", 30));
+            _tradingService.AddTrade(new Trade("trade2", "Mehmet", new Card("2", "WaterSpell", 40), "Spell", 20));
         }
 
         public void Start()
@@ -109,7 +113,10 @@ namespace MTCG.Server
             {
                 return HandleGetStats(authHeader);
             }
-
+            else if (method == "GET" && path == "/tradings")
+            {
+                return HandleGetTradings();
+            }
             return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRoute nicht gefunden";
         }
         private string HandleUserRegistration(string requestBody)
@@ -334,6 +341,18 @@ namespace MTCG.Server
                 user.Losses
             });
 
+            return $"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{jsonResponse}";
+        }
+        private string HandleGetTradings()
+        {
+            List<Trade> trades = _tradingService.GetActiveTrades();
+
+            if (trades.Count == 0)
+            {
+                return "HTTP/1.1 204 No Content\r\nContent-Type: text/plain\r\n\r\nKeine aktiven Trades verfügbar";
+            }
+
+            string jsonResponse = JsonSerializer.Serialize(trades);
             return $"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{jsonResponse}";
         }
     }

@@ -25,3 +25,5 @@ curl -X PUT http://localhost:10001/deck -H "Authorization: Mehmet-mtcgToken" -H 
 curl -X GET http://localhost:10001/scoreboard
 
 curl -X GET http://localhost:10001/stats -H "Authorization: Ahmet-mtcgToken"
+
+curl -X GET http://localhost:10001/tradings
