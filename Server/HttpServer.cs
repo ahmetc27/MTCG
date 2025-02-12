@@ -117,6 +117,10 @@ namespace MTCG.Server
             {
                 return HandleGetTradings();
             }
+            else if (method == "POST" && path == "/tradings")
+            {
+                return HandleCreateTrade(authHeader, requestBody);
+            }
             return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRoute nicht gefunden";
         }
         private string HandleUserRegistration(string requestBody)
@@ -354,6 +358,46 @@ namespace MTCG.Server
 
             string jsonResponse = JsonSerializer.Serialize(trades);
             return $"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{jsonResponse}";
+        }
+
+        private string HandleCreateTrade(string authHeader, string requestBody)
+        {
+            if (string.IsNullOrEmpty(authHeader))
+            {
+                return "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nKein Token angegeben";
+            }
+
+            string username = authHeader.Replace("-mtcgToken", ""); // Token in Username umwandeln
+
+            if (!_userService.ValidateToken(username, authHeader))
+            {
+                return "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUngültiger Token";
+            }
+
+            try
+            {
+                Trade? trade = JsonSerializer.Deserialize<Trade>(requestBody);
+                if (trade == null || string.IsNullOrEmpty(trade.Id) || string.IsNullOrEmpty(trade.RequiredType))
+                {
+                    return "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nUngültige Trade-Daten";
+                }
+
+                List<Card> userCards = _cardService.GetUserCards(username);
+                Card? offeredCard = userCards.FirstOrDefault(c => c.Id == trade.OfferedCard.Id);
+
+                if (offeredCard == null)
+                {
+                    return "HTTP/1.1 403 Forbidden\r\nContent-Type: text/plain\r\n\r\nKarte gehört nicht dem User";
+                }
+
+                _tradingService.AddTrade(new Trade(trade.Id, username, offeredCard, trade.RequiredType, trade.MinimumDamage));
+
+                return "HTTP/1.1 201 Created\r\nContent-Type: text/plain\r\n\r\nTrade erfolgreich erstellt";
+            }
+            catch
+            {
+                return "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nFehlerhafte JSON-Daten";
+            }
         }
     }
 }

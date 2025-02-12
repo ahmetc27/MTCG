@@ -27,3 +27,5 @@ curl -X GET http://localhost:10001/scoreboard
 curl -X GET http://localhost:10001/stats -H "Authorization: Ahmet-mtcgToken"
 
 curl -X GET http://localhost:10001/tradings
+
+curl -X POST http://localhost:10001/tradings -H "Authorization: Ahmet-mtcgToken" -H "Content-Type: application/json" -d "{\"Id\": \"trade3\", \"OfferedCard\": { \"Id\": \"1\", \"Name\": \"FireDragon\", \"Damage\": 50 }, \"RequiredType\": \"Monster\", \"MinimumDamage\": 30 }"
