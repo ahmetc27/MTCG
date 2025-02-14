@@ -7,11 +7,18 @@ namespace MTCG.Services
     {
         private readonly List<Trade> _activeTrades = new();
 
-        public void AddTrade(Trade trade)
+        public bool AddTrade(Trade trade)
         {
-            _activeTrades.Add(trade);
-        }
+            // Prüfen, ob die ID bereits existiert
+            if (_activeTrades.Any(t => t.Id == trade.Id))
+            {
+                Console.WriteLine($"Trade mit ID {trade.Id} existiert bereits!");
+                return false;
+            }
 
+            _activeTrades.Add(trade);
+            return true;
+        }
         public List<Trade> GetActiveTrades()
         {
             return _activeTrades;
