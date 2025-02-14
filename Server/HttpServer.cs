@@ -28,8 +28,9 @@ namespace MTCG.Server
             _deckService = new DeckService();
             _battleService = new BattleService(_deckService, _userService);
 
-            _tradingService.AddTrade(new Trade("trade1", "Ahmet", new Card("1", "FireDragon", 50), "Monster", 30));
-            _tradingService.AddTrade(new Trade("trade2", "Mehmet", new Card("2", "WaterSpell", 40), "Spell", 20));
+            _tradingService.AddTrade(new Trade("trade1", "Ahmet", new Card("1", "FireDragon", 50, "Monster"), "Monster", 30));
+            _tradingService.AddTrade(new Trade("trade2", "Mehmet", new Card("2", "WaterSpell", 40, "Spell"), "Spell", 20));
+
         }
 
         public void Start()
@@ -120,6 +121,10 @@ namespace MTCG.Server
             else if (method == "POST" && path == "/tradings")
             {
                 return HandleCreateTrade(authHeader, requestBody);
+            }
+            else if (method == "POST" && path.StartsWith("/tradings/"))
+            {
+                return HandleAcceptTrade(path, authHeader, requestBody);
             }
             return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRoute nicht gefunden";
         }
@@ -393,6 +398,69 @@ namespace MTCG.Server
                 _tradingService.AddTrade(new Trade(trade.Id, username, offeredCard, trade.RequiredType, trade.MinimumDamage));
 
                 return "HTTP/1.1 201 Created\r\nContent-Type: text/plain\r\n\r\nTrade erfolgreich erstellt";
+            }
+            catch
+            {
+                return "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nFehlerhafte JSON-Daten";
+            }
+        }
+        private string HandleAcceptTrade(string path, string authHeader, string requestBody)
+        {
+            if (string.IsNullOrEmpty(authHeader))
+            {
+                return "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nKein Token angegeben";
+            }
+
+            string username = authHeader.Replace("-mtcgToken", ""); // Token in Username umwandeln
+
+            if (!_userService.ValidateToken(username, authHeader))
+            {
+                return "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUngültiger Token";
+            }
+
+            string tradeId = path.Substring(10); // "/tradings/{id}" → Trade-ID extrahieren
+
+            Trade? trade = _tradingService.GetTradeById(tradeId);
+            if (trade == null)
+            {
+                return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nTrade nicht gefunden";
+            }
+
+            if (trade.Owner == username)
+            {
+                return "HTTP/1.1 403 Forbidden\r\nContent-Type: text/plain\r\n\r\nDu kannst deinen eigenen Trade nicht annehmen";
+            }
+
+            try
+            {
+                Card? offeredCard = JsonSerializer.Deserialize<Card>(requestBody);
+                if (offeredCard == null)
+                {
+                    return "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nFehlerhafte JSON-Daten";
+                }
+
+                List<Card> userCards = _cardService.GetUserCards(username);
+                Card? userCard = userCards.FirstOrDefault(c => c.Id == offeredCard.Id);
+
+                if (userCard == null)
+                {
+                    return "HTTP/1.1 403 Forbidden\r\nContent-Type: text/plain\r\n\r\nKarte gehört nicht dem User";
+                }
+
+                if (userCard.Type != trade.RequiredType || userCard.Damage < trade.MinimumDamage)
+                {
+                    return "HTTP/1.1 403 Forbidden\r\nContent-Type: text/plain\r\n\r\nKarte erfüllt nicht die Anforderungen des Trades";
+                }
+
+                // Karten tauschen
+                _cardService.RemoveCardFromUser(username, userCard);
+                _cardService.AddCardToUser(username, trade.OfferedCard);
+                _cardService.RemoveCardFromUser(trade.Owner, trade.OfferedCard);
+                _cardService.AddCardToUser(trade.Owner, userCard);
+
+                _tradingService.RemoveTrade(tradeId);
+
+                return "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nTrade erfolgreich abgeschlossen";
             }
             catch
             {

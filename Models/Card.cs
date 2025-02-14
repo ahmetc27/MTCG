@@ -5,12 +5,14 @@ namespace MTCG.Models
         public string Id { get; set; }
         public string Name { get; set; }
         public double Damage { get; set; }
+        public string Type { get; set; }
 
-        public Card(string id, string name, double damage)
+        public Card(string id, string name, double damage, string type)
         {
             Id = id;
             Name = name;
             Damage = damage;
+            Type = type;
         }
     }
 }

@@ -21,5 +21,20 @@ namespace MTCG.Services
         {
             return _userCards.ContainsKey(username) ? _userCards[username] : new List<Card>();
         }
+        public void RemoveCardFromUser(string username, Card card)
+        {
+            if (_userCards.ContainsKey(username))
+            {
+                _userCards[username].RemoveAll(c => c.Id == card.Id);
+            }
+        }
+        public void AddCardToUser(string username, Card card)
+        {
+            if (!_userCards.ContainsKey(username))
+            {
+                _userCards[username] = new List<Card>();
+            }
+            _userCards[username].Add(card);
+        }
     }
 }

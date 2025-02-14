@@ -21,25 +21,18 @@ namespace MTCG.Services
 
             // Testweise Karten hinzufügen
             Console.WriteLine($"DEBUG: Karten für {username} werden hinzugefügt...");
+
             _cardService.AddCardsToUser(username, new List<Card>
             {
-                new Card("1", "FireDragon", 50),
-                new Card("2", "WaterGoblin", 30),
-                new Card("3", "RegularOrk", 40),
-                new Card("4", "WaterSpell", 35)
+                new Card("1", "FireDragon", 50, "Monster"),
+                new Card("2", "WaterGoblin", 30, "Monster"),
+                new Card("3", "RegularOrk", 40, "Monster"),
+                new Card("4", "WaterSpell", 35, "Spell"),
+                new Card("5", "LightningDragon", 55, "Monster"),
+                new Card("6", "EarthGolem", 32, "Monster"),
+                new Card("7", "ShadowElf", 45, "Monster"),
+                new Card("8", "FireSpell", 38, "Spell")
             });
-
-            // Falls Mehmet registriert wird, soll er andere Karten bekommen:
-            if (username == "Mehmet")
-            {
-                _cardService.AddCardsToUser(username, new List<Card>
-                {
-                    new Card("5", "LightningDragon", 55),
-                    new Card("6", "EarthGolem", 32),
-                    new Card("7", "ShadowElf", 45),
-                    new Card("8", "FireSpell", 38)
-                });
-            }
 
             Console.WriteLine("DEBUG: Karten erfolgreich hinzugefügt!");
             return true;

@@ -16,5 +16,14 @@ namespace MTCG.Services
         {
             return _activeTrades;
         }
+        public Trade? GetTradeById(string tradeId)
+        {
+            return _activeTrades.FirstOrDefault(t => t.Id == tradeId);
+        }
+
+        public void RemoveTrade(string tradeId)
+        {
+            _activeTrades.RemoveAll(t => t.Id == tradeId);
+        }
     }
 }
