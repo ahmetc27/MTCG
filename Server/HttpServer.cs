@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Text.Json;
 using MTCG.Services;
 using MTCG.Models;
+using MTCG.Repositories;
 
 namespace MTCG.Server
 {
@@ -129,6 +130,10 @@ namespace MTCG.Server
             else if (method == "DELETE" && path.StartsWith("/tradings/"))
             {
                 return HandleDeleteTrade(path, authHeader);
+            }
+            else if (method == "GET" && path == "/users")
+            {
+                return HandleGetAllUsersWithAdo();
             }
             return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRoute nicht gefunden";
         }
@@ -499,6 +504,21 @@ namespace MTCG.Server
             _tradingService.RemoveTrade(tradeId);
 
             return "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nTrade erfolgreich gelöscht";
+        }
+        private string HandleGetAllUsersWithAdo()
+        {
+            var connectionString = "Host=localhost;Port=5432;Database=mtcgdb;Username=mtcguser;Password=mtcgpassword";
+            var userRepo = new UserRepositoryAdo(connectionString);
+
+            var users = userRepo.GetAllUsers();
+
+            if (users.Count() == 0)
+            {
+                return "HTTP/1.1 204 No Content\r\nContent-Type: text/plain\r\n\r\nKeine User vorhanden";
+            }
+
+            var jsonResponse = System.Text.Json.JsonSerializer.Serialize(users);
+            return $"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{jsonResponse}";
         }
     }
 }

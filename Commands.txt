@@ -44,3 +44,5 @@ curl -X POST http://localhost:10001/tradings -H "Authorization: Ahmet-mtcgToken"
 curl -X DELETE http://localhost:10001/tradings/trade5 -H "Authorization: Mehmet-mtcgToken"
 
 curl -X DELETE http://localhost:10001/tradings/trade5 -H "Authorization: Ahmet-mtcgToken"
+
+curl -X GET http://localhost:10001/users

@@ -13,5 +13,10 @@ namespace MTCG.Models
             Username = username;
             Password = password; // TODO: Hashen für mehr Sicherheit
         }
+        public User()
+        {
+            Username = string.Empty;
+            Password = string.Empty;
+        }
     }
 }
