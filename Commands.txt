@@ -38,3 +38,9 @@ curl -X POST http://localhost:10001/tradings/trade3 -H "Authorization: Mehmet-mt
  curl -X POST http://localhost:10001/tradings/trade3 -H "Authorization: Mehmet-mtcgToken" -H "Content-Type: application/json"  -d "{\"Id\": \"6\", \"Name\": \"EarthGolem\", \"Damage\": 32, \"Type\": \"Monster\" }" // TRADE ANNEHMEN
 
 curl -X GET http://localhost:10001/cards -H "Authorization: Mehmet-mtcgToken"
+
+curl -X POST http://localhost:10001/tradings -H "Authorization: Ahmet-mtcgToken" -H "Content-Type: application/json" -d "{\"Id\": \"trade5\", \"OfferedCard\": { \"Id\": \"1\", \"Name\": \"FireDragon\", \"Damage\": 50, \"Type\": \"Monster\" }, \"RequiredType\": \"Monster\", \"MinimumDamage\": 30 }"
+
+curl -X DELETE http://localhost:10001/tradings/trade5 -H "Authorization: Mehmet-mtcgToken"
+
+curl -X DELETE http://localhost:10001/tradings/trade5 -H "Authorization: Ahmet-mtcgToken"

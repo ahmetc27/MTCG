@@ -126,6 +126,10 @@ namespace MTCG.Server
             {
                 return HandleAcceptTrade(path, authHeader, requestBody);
             }
+            else if (method == "DELETE" && path.StartsWith("/tradings/"))
+            {
+                return HandleDeleteTrade(path, authHeader);
+            }
             return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRoute nicht gefunden";
         }
         private string HandleUserRegistration(string requestBody)
@@ -466,6 +470,35 @@ namespace MTCG.Server
             {
                 return "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nFehlerhafte JSON-Daten";
             }
+        }
+        private string HandleDeleteTrade(string path, string authHeader)
+        {
+            if (string.IsNullOrEmpty(authHeader))
+            {
+                return "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nKein Token angegeben";
+            }
+
+            string username = authHeader.Replace("-mtcgToken", "");
+
+            // Trade-ID aus dem Pfad extrahieren: /tradings/{id}
+            string tradeId = path.Substring(10);
+
+            Trade? trade = _tradingService.GetTradeById(tradeId);
+            if (trade == null)
+            {
+                return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nTrade nicht gefunden";
+            }
+
+            // Überprüfen, ob der aktuelle Benutzer der Besitzer des Trades ist
+            if (trade.Owner != username)
+            {
+                return "HTTP/1.1 403 Forbidden\r\nContent-Type: text/plain\r\n\r\nDu bist nicht der Besitzer dieses Trades";
+            }
+
+            // Trade löschen
+            _tradingService.RemoveTrade(tradeId);
+
+            return "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nTrade erfolgreich gelöscht";
         }
     }
 }
