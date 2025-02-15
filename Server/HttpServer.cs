@@ -7,6 +7,7 @@ using System.Text.Json;
 using MTCG.Services;
 using MTCG.Models;
 using MTCG.Repositories;
+using Npgsql;
 
 namespace MTCG.Server
 {
@@ -134,6 +135,10 @@ namespace MTCG.Server
             else if (method == "GET" && path == "/users")
             {
                 return HandleGetAllUsersWithAdo();
+            }
+            else if (method == "POST" && path == "/packages")
+            {
+                return HandlePostPackage(authHeader, requestBody);
             }
             return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRoute nicht gefunden";
         }
@@ -519,6 +524,43 @@ namespace MTCG.Server
 
             var jsonResponse = System.Text.Json.JsonSerializer.Serialize(users);
             return $"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{jsonResponse}";
+        }
+        private string HandlePostPackage(string authHeader, string requestBody)
+        {
+            try
+            {
+                var cards = JsonSerializer.Deserialize<List<Card>>(requestBody);
+
+                if (cards == null || cards.Count != 5)
+                {
+                    return "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nEin Paket muss genau 5 Karten enthalten";
+                }
+
+                using var connection = new NpgsqlConnection("Host=localhost;Port=5432;Database=mtcgdb;Username=mtcguser;Password=mtcgpassword");
+                connection.Open();
+
+                using var transaction = connection.BeginTransaction();
+
+                foreach (var card in cards)
+                {
+                    var command = new NpgsqlCommand(
+                        "INSERT INTO cards (id, name, damage, type, owner_id) VALUES (@id, @name, @damage, @type, NULL)", connection);
+
+                    command.Parameters.AddWithValue("@id", Guid.Parse(card.Id));
+                    command.Parameters.AddWithValue("@name", card.Name);
+                    command.Parameters.AddWithValue("@damage", card.Damage);
+                    command.Parameters.AddWithValue("@type", card.Type);
+
+                    command.ExecuteNonQuery();
+                }
+
+                transaction.Commit();
+                return "HTTP/1.1 201 Created\r\nContent-Type: text/plain\r\n\r\nKartenpaket erfolgreich erstellt";
+            }
+            catch (Exception ex)
+            {
+                return $"HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\n\r\nFehler beim Erstellen des Kartenpakets: {ex.Message}";
+            }
         }
     }
 }
